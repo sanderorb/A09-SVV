@@ -1,0 +1,167 @@
+import numpy as np
+from math import *
+
+#### inputs ####
+
+C_a = 0.547 * 10**3         #mm
+l_a = 2.771 * 10**3         #mm
+x_1 = 0.153 * 10**3         #mm
+x_2 = 1.281 * 10**3         #mm
+x_3 = 2.681 * 10**3         #mm
+x_a = 28.0 * 10             #mm
+h_a = 22.5 * 10             #mm
+t_sk = 1.1                  #mm
+t_sp = 2.9                  #mm
+t_st = 1.2                  #mm
+h_st = 1.5 * 10             #mm
+w_st = 2.0 * 10             #mm
+n_st = 17                   #-
+d_1 = 1.103 * 10            #mm
+d_3 = 1.642 * 10            #mm
+theta = 26 * np.pi / 180    #rad
+
+#### Centroid Positioning ####
+
+def Pos_st(C_a, h_a, n_st):
+    #initial dimensions
+    lengfront = np.pi * h_a / 2                                         #length of circular part of skin
+    lengback = (2 * h_a**2 + 4 * C_a**2 - 4 * C_a * h_a)**(0.5)         #length of straight part of skin
+    lengperiph = lengfront + lengback                                   #length of periphery of skin
+    stspace = lengperiph / (n_st)                                       #distance between two stiffeners along skin
+    n_frt, lenrem = divmod(lengfront/2, stspace)                        #number of stiffeners on circular part, last bit of length between last stiffener and spar
+    theta = stspace / lengfront * np.pi                                 #angle between two stiffeners on the circular part
+    phi = atan((h_a/2) / (C_a - h_a/2))                                 #angle of the straight skin w.r.t. chord line
+    n_plate = int((n_st - 1 - 2*n_frt) / 2)                             #number of stiffeners on straight part
+    s_first = stspace - lenrem                                          #distance between first stiffener on straight part and spar
+
+    xtab = [0.0]                                                        #list of x-coordinates for the stiffeners
+    ytab = [0.0]                                                        #list of y-coordinates for the stiffeners
+
+    #we append the positions of the stiffeners on the circular section to the lists of coordinates
+    for i in range(0, int(n_frt)):
+        theta_st=(i+1) * theta
+        x = h_a/2 * (1 - cos(theta_st))
+        y = h_a/2 * sin(theta_st)
+        xtab.append(x)
+        ytab.append(y)
+
+    #we append the positions of the stiffeners on the straight section to the lists of coordinates
+    for i in range(0, n_plate):
+        dist = s_first + i * stspace
+        x = h_a/2 + dist * cos(phi)
+        y = h_a/2 - dist * sin(phi)
+        xtab.append(x)
+        ytab.append(y)
+
+    xtab = np.array(xtab)
+    ytab = np.array(ytab)
+    ytab2 = ytab * -1
+
+    tab = []                                                            #list of all of the coordinate points of the stiffeners, in [x,y] format
+    for i in range(len(xtab)):
+        tab.append([xtab[i], ytab[i]])
+    for i in range(1,len(xtab)):
+        tab.append([xtab[i], ytab2[i]])
+    tab = np.array(tab)
+    
+    return tab
+    
+
+
+def Centroid(C_a, h_a, t_st, t_sp, t_sk, h_st, w_st, n_st):
+    #centroid stiffeners
+    tab = Pos_st(C_a, h_a, n_st)                                                        #list of coordinate points of the stiffeners
+
+    Sum_Ax = 0                                                                          #sum of Area*xbar of all stiffeners
+    Sum_Ay = 0                                                                          #sum of Area*ybar of all stiffeners
+
+    A_st = (h_st + w_st - t_st) * t_st                                                  #area of a stiffener
+
+    for i in range(len(tab)):
+        Ax = A_st * tab[i][0]
+        Ay = A_st * tab[i][1]
+        Sum_Ax += Ax
+        Sum_Ay += Ay
+
+    xbar_st = Sum_Ax / (A_st * n_st)                                                    #x-coordinate of centroid of stiffeners
+    ybar_st = Sum_Ay / (A_st * n_st)                                                    #y-coordinate of centroid of stiffeners
+
+    #centroid skin
+    lengfront = np.pi * h_a / 2                                                         #length of circular part of skin
+    lengback = (2 * h_a**2 + 4 * C_a**2 - 4 * C_a * h_a)**(0.5)                         #length of straight part of skin
+    lengperiph = lengfront + lengback                                                   #length of periphery of skin
+    phi = atan((h_a/2) / (C_a - h_a/2))                                                 #angle of the straight skin w.r.t. chord line
+    
+    xbar_sk = C_a - (lengperiph / 4 * cos(phi))                                         #distance between leading edge and centroid of skin
+    A_sk = t_sk * lengperiph                                                            #area of the skin
+
+    #centroid spar
+    xbar_sp = h_a/2                                                                     #distance between leading edge and centrois of spar
+    A_sp = h_a * t_sp                                                                   #area of the spar
+
+    #centroid whole structure
+    Centroid = (Sum_Ax + A_sk * xbar_sk + A_sp * xbar_sp)/(A_st * n_st + A_sk + A_sp)   #distance between leading edge and centroid
+    return Centroid
+
+def IxxIyy(C_a, h_a, t_st, t_sp, t_sk, h_st, w_st, n_st):
+    centroid = Centroid(C_a, h_a, t_st, t_sp, t_sk, h_st, w_st, n_st)
+
+    #Moments of inertia straight skin
+    phi = atan((h_a/2) / (C_a - h_a/2))                                 #angle of the straight skin w.r.t. chord line
+    lengback = (2 * h_a**2 + 4 * C_a**2 - 4 * C_a * h_a)**(0.5)         #length of straight part of skin
+    A_p = lengback * t_sk                                               #area of the straight skin
+    d_p = (C_a/2 - h_a/4) - centroid                                    #distance between centroid of straight skin and centroid of whole structure
+
+    Ix_p = t_sk * lengback**3 * (sin(phi))**2 / 12                      #I_xx of the straight skin (about its own centroid)
+    Iy_p = 2 * t_sk * (lengback/2)**3 * (cos(phi))**2 / 12              #I_yy of the straight skin (about its own centroid)
+
+    Stei_x_p = 0.0                                                      #Steiner term of the straight skin in x direction wrt centroid of structure
+    Stei_y_p = A_p * d_p**2                                             #Steiner term of the straight skin in y direction wrt centroid of structure
+
+    #Moments of inertia curved skin
+    lengfront = np.pi * h_a / 2                                         #length of circular part of skin
+    A_c = lengfront * t_sk                                              #area of the curved skin
+    d_c = centroid - (h_a/2) * ((1/(sqrt(2))) - 1)                      #distance between centroid of curved skin and centroid of whole structure
+
+    Ix_c = (np.pi / 2) * (h_a / 2)**3 * t_sk                            #I_xx of the curved skin (about its own centroid)
+    Iy_c = 0.0                                                          #I_yy of the curved skin (about its own centroid)
+
+    Stei_x_c = 0.0                                                      #Steiner term of the curved skin in x direction wrt centroid of structure
+    Stei_y_c = A_c * d_c**2                                             #Steiner term of the curved skin in y direction wrt centroid of structure
+
+    #Moments of inertia spar
+    A_sp = h_a * t_sp                                                   #area of the spar
+    d_sp = centroid - h_a/2                                             #distance between centroid of spar and centroid of whole structure
+
+    Ix_sp = h_a**3 * t_sp / 12                                          #I_xx of the spar (about its own centroid)
+    Iy_sp = 0.0                                                         #I_yy of the spar (about its own centroid)
+
+    Stei_x_sp = 0.0                                                     #Steiner term of the spar in x direction wrt centroid of structure
+    Stei_y_sp = A_sp * d_sp**2                                          #Steiner term of the spar in y direction wrt centroid of structure
+
+    #Moments of inertia stiffeners
+    tab = Pos_st(C_a, h_a, n_st)                                        #positions of the stiffeners as (x,y) coordinates
+    A_st = (h_st + w_st - t_st) * t_st                                  #area of a stiffener
+
+    xtab = []
+    ytab = []
+    for i in range(len(tab)):
+        xtab.append(tab[i][0])
+        ytab.append(tab[i][1])
+    xtab = xtab - centroid
+
+    xtab = np.square(xtab)
+    ytab = np.square(ytab)
+
+    xtab = A_st * xtab
+    ytab = A_st * ytab
+
+    Stei_x_st = np.sum(ytab)                                            #Steiner term of the stiffeners in x direction wrt centroid of structure
+    Stei_y_st = np.sum(xtab)                                            #Steiner term of the stiffeners in y direction wrt centroid of structure
+
+    #Sum of Moments
+
+    I_xx = Ix_p + Stei_x_p + Ix_c + Stei_x_c + Ix_sp + Stei_x_sp + Stei_x_st
+    I_yy = Iy_p + Stei_y_p + Iy_c + Stei_y_c + Iy_sp + Stei_y_sp + Stei_y_st
+
+    return I_xx, I_yy
