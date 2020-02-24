@@ -32,6 +32,8 @@ yb = np.array([[0.0, 0.0],
 b = 2 # boom area 
 qb = [] # empty list to append base shear flow
 d = []
+
+
 # Skin contribution functions (vertical)
 def s1(x):
     f = t*h*m.sin(x/h) 
@@ -53,6 +55,34 @@ def s6(x):
     return f
 # Integration function
 
+
+# Skin contribution functions (horizontal)
+# Skin contribution functions (horizontal)
+r = h
+centroid = ([[0,213.50105304149162/1000.]])
+l = Ca-r
+xc = centroid[1]
+diag = m.sqrt((Ca-r)**2+h**2)
+
+def x1(y):
+    f1 = t*(-(xc-r)+(r)*m.cos(y/r))
+    return f1
+def x2(y):
+    f1 = ts*(-(xc-r))
+    return f1
+def x3(y):
+    f1 = t*(-(xc-r)+y*(Ca-r)/diag)
+    return f1
+def x4(y):
+    f1 = t*(-(xc-r)+(Ca-r)-y*(Ca-r)/Diag)
+    return f1
+def x5(y):
+    f1 = ts*(-(xc-r))
+    return f1
+def x6(y):
+    t*(-(xc-r)+(-r)*m.cos(y/r))
+    return f1
+
 n = 10 
 
 def integrate(f,n,a,b):
@@ -68,18 +98,19 @@ def integrate(f,n,a,b):
 
 # Total skin contribution per section
 
-S1 = integrate(s1, n, 0, m.pi*0.5)
-
+S1 = integrate(s1, n, 0, h*m.pi*0.5)
 S2 = integrate(s2, n, 0, h)
-
 S3 = integrate(s3, n, 0, l)
-
 S4 = integrate(s4, n, 0, l)
-
 S5 = integrate(s5, n, 0, h)
+S6 = integrate(s6, n, 0, h*m.pi*0.5)
 
-S6 = integrate(s6, n, 0, m.pi*0.5)
-
+SH1 = integrate(x1, n, 0, m.pi*r*0.5)
+SH2 = integrate(x2, n, 0, h)
+SH3 = integrate(x3, n, 0, diag)
+SH4 = integrate(x1, n, 0, diag)
+SH5 = integrate(x2, n, 0, h)
+SH6 = integrate(x3, n, 0, m.pi*r*0.5)
 
     # Base shear flow calculations
 for s in range(1252):
