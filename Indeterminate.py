@@ -16,6 +16,11 @@ def toggle(x,loc):
         return (x-loc)
     else:
         return 0
+def  toggle0(x,loc):
+    if x>=loc:
+        return (1)
+    else:
+        return 0
 
 def integrate(f,a,b):
     x = np.linspace(a,b,len(f)) # N+1 points make N subintervals
@@ -107,14 +112,39 @@ s = 0.11427352 + h_a/2      #m
 
 P = 91.7 * 10**3            #N
 
-q_x = np.linspace(1.0, 1.0, 100)     #N/m
-t_x = np.linspace(1.0, 1.0, 100)     #N
+#q_x = np.linspace(1.0, 1.0, 100)     #N/m
+#t_x = np.linspace(1.0, 1.0, 100)     #N
+qobject = open('q.txt', 'r')
+q_x = ''
+for line in qobject.readlines():
+    q_x += line
+q_x = q_x.split(', ')
+q_x[0] = q_x[0].replace('[','')
+q_x[-1] = q_x[-1].replace(']','')
+qobject.close()
+for i in range(len(q_x)):
+    q_x[i] = float(q_x[i])
+q_x = np.array(q_x)
+q_x = 1000 * q_x
 
-E = 73.1 * 10**12                    #GPa
+tauobject = open('tau.txt', 'r')
+t_x = ''
+for line in tauobject.readlines():
+    t_x += line
+t_x = t_x.split(', ')
+t_x[0] = t_x[0].replace('[','')
+t_x[-1] = t_x[-1].replace(']','')
+tauobject.close()
+for i in range(len(t_x)):
+    t_x[i] = float(t_x[i])
+t_x = np.array(t_x)
+t_x = 1000 * t_x
+
+E = 73.1 * 10**9                   #GPa
 I_zz = 1.2689896034082582 * 10**(-5)     #m^4
 I_yy = 6.616599015880662 * 10**(-5)      #m^4
 
-G = 28 * 10**12                     #GPa
+G = 28 * 10**9                    #GPa
 J = 1.66313927 * 10**(-5)   #m^4
 
 #### Code ####
@@ -136,4 +166,37 @@ M[9], b[9] = Coefs_zdeflect(x_I, x_1, x_2, x_3, x_a, theta, E, I_yy, P, 0)
 M[10], b[10] = Coefs_zdeflect(x_2, x_1, x_2, x_3, x_a, theta, E, I_yy, P, 0)
 M[11], b[11] =  Coefs_zdeflect(x_3, x_1, x_2, x_3, x_a, theta, E, I_yy, P, (-d_3 * sin(theta)))
 
-x = linalg.gmres(M,b,tol = 1e-5)
+#F= linalg.gmres(M,b,tol = 1e-5 )
+F1=np.linalg.lstsq(M,b)
+[F_z1,F_z2,F_z3,F_y1,F_y2,F_y3,H,C1,C2,C3,C4,C5]=F1[0]
+x= np.linspace(0,l_a,1000)
+My=np.zeros(len(x))
+Mz=np.zeros(len(x))
+T=np.zeros(len(x))
+vy=np.zeros(len(x))
+vz=np.zeros(len(x))
+for i in range(len(x)):
+   
+    x1=x_1
+    x2=x_2
+    x3=x_3
+    S=s
+    My[i]= -F_z1*toggle(x[i],x1)**1-F_z2*toggle(x[i],x2)-F_z3*toggle(x[i],x3)+ H*cos(theta)*toggle(x[i],x_I)+P*cos(theta)*toggle(x[i],x_II)
+   
+    Mz[i]= F_y1*toggle(x[i],x1)+F_y2*toggle(x[i],x2)+F_y3*toggle(x[i],x3)
+    -H*sin(theta)*toggle(x[i],x_I)-P*sin(theta)*toggle(x[i],x_II)-integrate(integrate(q_x,0,x[i]),0,x[i])[-1]
+    
+    T[i]=(F_y1*(S-(h_a/2))*toggle0(x[i],x1)+F_y2*(S-(h_a/2))*toggle0(x[i],x2)+F_y3*(S-(h_a/2))*toggle0(x[i],x3)
+   -P*sin(theta)*S*toggle0(x[i],x_II)-H*sin(theta)*S*toggle0(x[i],x_I)+P*cos(theta)*(h_a/2)*toggle0(x[i],x_II)+H*cos(theta)*(h_a/2)*toggle0(x[i],x_I)-integrate(t_x,0,x[i]))[-1]*-1
+    vy[i]=-(1/(E*I_zz))*((1/6)*F_y1*toggle(x[i],x1)**3 +(1/6)*F_y2*toggle(x[i],x2)**3+(1/6)*F_y3*toggle(x[i],x3)**3-(1/6)*H*sin(theta)*toggle(x[i],x_I)**3-(1/6)*P*sin(theta)*toggle(x[i],x_II)**3-integrate(integrate(integrate(integrate(q_x,0,x[i]),0,x[i]),0,x[i]),0,x[i])[-1])+C1*x[i]+C2
+    vz[i]=-(1/(E*I_yy))*(-(1/6)*F_z1*toggle(x[i],x1)**3-(1/6)*F_z2*toggle(x[i],x2)**3-(1/6)*F_z3*toggle(x[i],x3)**3+(1/6)*H*cos(theta)*toggle(x[i],x_I)**3+(1/6)*P*cos(theta)*toggle(x[i],x_II)**3)+C3*x[i]+C4
+
+d=integrate(integrate(My,0,l_a)+C1,0,l_a) 
+d=np.array(d)
+d=d*(1/(E*I_zz)) 
+#plt.plot(,'green')
+#plt.plot(x[0:len(d)],d+C2,'green')
+plt.plot(x[0:len(vz)],vz,'red')
+#plt.plot(x,np.zeros(len(x)))
+
+plt.show()
