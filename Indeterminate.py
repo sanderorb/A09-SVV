@@ -123,7 +123,8 @@ h_a = 22.5 * 10**(-2)       #m
 d_1 = 1.103 * 10**(-2)      #m
 d_3 = 1.642 * 10**(-2)      #m
 theta = radians(26)         #rad
-s = 0.11427352 + h_a/2      #m
+s = 0.12099196664           #m
+#s = 0.11427352 + h_a/2      #m
 
 P = 91.7 * 10**3            #N
 
@@ -229,7 +230,7 @@ def Deflections(x_1,x_2,x_3,x_a,s,h_a,l_a,theta,P,q_x,t_x,d_1,d_3,E,I_yy,I_zz,G,
         Mz[i]= F_y1*toggle(x[i],x_1)+F_y2*toggle(x[i],x_2)+F_y3*toggle(x[i],x_3)-H*sin(theta)*toggle(x[i],x_I)-P*sin(theta)*toggle(x[i],x_II)-integrate(integrate(q_x,0,x[i]),0,x[i])[-1]
         Sy[i]=F_y1*toggle0(x[i],x_1)+F_y2*toggle0(x[i],x_2)+F_y3*toggle0(x[i],x_3)-H*sin(theta)*toggle0(x[i],x_I)-P*sin(theta)*toggle0(x[i],x_II)-integrate(q_x,0,x[i])[-1]
         Sz[i]= -F_z1*toggle0(x[i],x_1)-F_z2*toggle0(x[i],x_2)-F_z3*toggle0(x[i],x_3)+H*cos(theta)*toggle0(x[i],x_I)+P*cos(theta)*toggle0(x[i],x_II)
-        T[i]=(F_y1*(s-(h_a/2))*toggle0(x[i],x_1)+F_y2*(s-(h_a/2))*toggle0(x[i],x_2)+F_y3*(s-(h_a/2))*toggle0(x[i],x_3)-P*sin(theta)*s*toggle0(x[i],x_II)-H*sin(theta)*s*toggle0(x[i],x_I)+P*cos(theta)*(h_a/2)*toggle0(x[i],x_II)+H*cos(theta)*(h_a/2)*toggle0(x[i],x_I)-integrate(t_x,0,x[i])[-1])*-1
+        T[i]=(F_y1*(s-(h_a/2))*toggle0(x[i],x_1)+F_y2*(s-(h_a/2))*toggle0(x[i],x_2)+F_y3*(s-(h_a/2))*toggle0(x[i],x_3)-P*sin(theta)*s*toggle0(x[i],x_II)-H*sin(theta)*s*toggle0(x[i],x_I)+P*cos(theta)*(h_a/2)*toggle0(x[i],x_II)+H*cos(theta)*(h_a/2)*toggle0(x[i],x_I)-integrate(t_x,0,x[i])[-1])
         vy[i]=-(1/(E*I_zz))*((1/6)*F_y1*toggle(x[i],x_1)**3 +(1/6)*F_y2*toggle(x[i],x_2)**3+(1/6)*F_y3*toggle(x[i],x_3)**3-(1/6)*H*sin(theta)*toggle(x[i],x_I)**3-(1/6)*P*sin(theta)*toggle(x[i],x_II)**3-integrate(integrate(integrate(integrate(q_x,0,x[i]),0,x[i]),0,x[i]),0,x[i])[-1])+C1*x[i]+C2
         vz[i]=-(1/(E*I_yy))*(-(1/6)*F_z1*toggle(x[i],x_1)**3-(1/6)*F_z2*toggle(x[i],x_2)**3-(1/6)*F_z3*toggle(x[i],x_3)**3+(1/6)*H*cos(theta)*toggle(x[i],x_I)**3+(1/6)*P*cos(theta)*toggle(x[i],x_II)**3)+C3*x[i]+C4
         phi[i]=-(1/(G*J))*((s-h_a/2)*(F_y1*toggle(x[i],x_1)+F_y2*toggle(x[i],x_2)+F_y3*toggle(x[i],x_3))+(h_a/2*cos(theta)-s*sin(theta))*(H*toggle(x[i],x_I)+P*toggle(x[i],x_II))-integrate(integrate(t_x,0,x[i]),0,x[i])[-1])+C5
@@ -240,11 +241,52 @@ def Deflections(x_1,x_2,x_3,x_a,s,h_a,l_a,theta,P,q_x,t_x,d_1,d_3,E,I_yy,I_zz,G,
 x=np.linspace(0,l_a,len(q_x))
 My, Mz, Sy, Sz, T, vy, vz, phi = Deflections(x_1,x_2,x_3,x_a,s,h_a,l_a,theta,P,q_x,t_x,d_1,d_3,E,I_yy,I_zz,G,J)
 
-plt.plot(x,My,'blue',label='My')
-plt.plot(x,Sz,'red',label='Sz')
+#plt.plot(x,My,'blue',label='My')
+#plt.plot(x,Sz,'red',label='Sz')
+#plt.show()
+
+#plt.plot(x,Mz,'blue',label='Mz')
+#plt.plot(x,Sy,'red',label='Sy')
+#plt.show()
+
+#plt.plot(x[0:len(vy)],vy)
+#plt.show()
+
+#plt.plot(x[0:len(vz)],vz)
+#plt.show()
+
+plt.plot(x,T)
+#plt.plot(x[0:len(phi)],phi)
 plt.show()
 
-plt.plot(x,Mz,'blue',label='Mz')
-plt.plot(x,Sy,'red',label='Sy')
-plt.show()
+Myobject = open('My.txt', 'w')
+Myobject.write(str(My))
+Myobject.close()
 
+Mzobject = open('Mz.txt', 'w')
+Mzobject.write(str(Mz))
+Mzobject.close()
+
+Syobject = open('Sy.txt', 'w')
+Syobject.write(str(Sy))
+Syobject.close()
+
+Szobject = open('Sz.txt', 'w')
+Szobject.write(str(Sz))
+Szobject.close()
+
+Tobject = open('T.txt', 'w')
+Tobject.write(str(T))
+Tobject.close()
+
+vyobject = open('vy.txt', 'w')
+vyobject.write(str(vy))
+vyobject.close()
+
+vzobject = open('vz.txt', 'w')
+vzobject.write(str(vz))
+vzobject.close()
+
+phiobject = open('phi.txt', 'w')
+phiobject.write(str(phi))
+phiobject.close()
